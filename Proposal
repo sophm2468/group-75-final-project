@@ -1,7 +1,38 @@
-Finding Data
+
+
+
+
+#Finding Data
 The datasets for both Population Density and Carbon Emissions by State by Year were downloaded from web urls. The links to each dataset are provided below. 
 https://www2.census.gov/programs-surveys/decennial/2020/data/apportionment/apportionment.csv
 https://www.climatewatchdata.org/ghg-emissions?end_year=2020&source=US&start_year=1990 
 The dataset for Population Density was collected from the US Census which counts every resident in the United States by mandating that everyone fills out a survey answering a range of questions including the number of people in each home, race, sex, and age. The Census strives to make sure every person is accounted for. Therefore, this dataset is about accounting for every individual who lives in each state. The dataset for Carbon Emissions by State by Year was conducted by a range of datasources including Climate Watch, PIK PRIMAP-hist, UNFCCC, and GCP. The Climate Watch dataset is the most comprehensive because it includes all sectors and gases of each state for each year.
 The Population Density dataset is comprised of 685 rows and the Carbon Emissions by State by Year dataset is made up of 50 rows. 
 The Population Density dataset is comprised of 10 columns and the Carbon Emissions by State by Year dataset is made up of 18 columns. 
+
+
+#Background Reserach
+https://populationconnection.org/resources/population-and-climate/#:~:text=Population%20growth%2C%20along%20with%20increasing,especially%20in%20low%2Dresource%20regions. 
+Talks about population and climate change
+Supports our thesis that climate change and population density are positively correlated
+Gives examples of solutions that can be implemented to fix this issue
+
+https://www.ucsusa.org/resources/climate-change-and-population
+
+10 richest parts of the world contribute to 50% of global warming emissions
+Contradicts our thesis by saying population density is NOT a factor in climate emissions
+
+https://www.who.int/health-topics/air-pollution#tab=tab_1
+99% of the population breathes in air that does NOT pass the WHO guidelines
+The drivers of air pollution are (usually) the same as the ones who are causing climate emissions
+
+https://www.lung.org/research/sota/key-findings/people-at-risk
+There are many different groups of people “at risk” for poor air quality
+POC
+People experiencing poverty
+Older adults
+Defines greenhouse gas emissions
+
+https://www.sciencedirect.com/science/article/abs/pii/S0166046220302817
+Supports our thesis of higher population density causing worsening air quality
+Measures air quality using NO2 concentrations
