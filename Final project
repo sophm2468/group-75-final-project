@@ -85,8 +85,9 @@ graph_1_server <- function(input, output) {
     ggplot(selected_state(), aes(x = Resident.Population, y = MtCO2e.level, color = as.factor(Year), label = Year)) +
       geom_point() +
       labs(x = "Population", y = "MtCO2e Levels (in Metric tons)") +
-      scale_color_manual(values = c("1990" = "blue", "2000" = "green", "2010" = "orange", "2020" = "red"),
+      scale_color_manual(values = c("1990" = "blue", "2000" = "green", "2010" = "orange", "2020" = "pink"),
                          name = "Year") +
+      geom_smooth(method=lm, se=FALSE, col='pink', size=1)+
       ggtitle(paste("CO2 Levels vs Population in", input$State))
   })
 }
@@ -99,7 +100,24 @@ fluidRow(
 br(),
 p("Hover your mouse over the graphs to explore population density and climate emissions in different regions of the US"),
 br(),
-
+sidebarPanel(
+  h4("Defining Regions"),
+  p("Far West: Washington, Oregon, California, Nevada"),
+  br(),
+  p("Rockies: Idaho, Montana, Wyoming, Utah, Colorado"),
+  br(),
+  p("Southwest: Arizona, New Mexico, Oklahoma, Texas"),
+  br(),
+  p("Plains: North Dakota, South Dakota, Nebraska, Kansas, Iowa, Minnesota, Missouri"),
+  br(),
+  p("Great Lakes: Missigain, Wisconson, Illinois, Indiana, Ohio"),
+  br(),
+  p("Southeast: Louisiana, Mississippi, Georgia, Florida, Arkansa, North Carolina, South Carolina, Tennessee, Kentucky, West Virginia, Virginia"),
+  br(),
+  p("Mid Atlantic: New York, Pensylvania, Delaware, Washington DC, New Jersy, Maryland"),
+  br(),
+  p("Southwest: Main, New Hampshire, Vermont, Rhode Island, Massachusetts, Conneticut")
+),
 mainPanel(
   h3("Comparing CO2 Emissions"),
   plotlyOutput(outputId = "density_emissions"),
@@ -180,13 +198,90 @@ graph_2_server <- function(input, output) {
 
 
 # UI for the third graph page
-graph_3_ui <-  fluidPage(
-  titlePanel("Per State"),
-  fluidRow(
-    p("In this section, we look at individual states. We will examine both the population density per each of the four years, and their climate emissions for each of the four years. Again, there is coorelation between the two, but the coorelation is not significant. Additionally, in over 90% of states, climate emissions went down in 2020, and this is a positive trend that we hope to continue as more and more data comes out.")),
-  br(),
-  p("")
+graph_3_ui <- fluidPage(
+  # Sidebar with a drop down menu for each state and their line graphs/extra info 
+  # density_line and regions_line
+  sidebarLayout(
+    sidebarPanel(
+      h1("State Selection"), 
+      selectInput(
+        inputId = "state_name",
+        label = "Choose a State/US Territory",
+        choices = complete_df$State),
+      p(paste("This state is in the region of the")), 
+      htmlOutput(outputId = "region"),
+      p(paste("This state's average population over the four years is")),
+      htmlOutput(outputId = "avg_pop"),
+      p(paste("and it's average population density is")), 
+      htmlOutput(outputId = "avg_density"),
+      br()
+    ),
+    mainPanel(
+      h3("State's trends"),
+      h4("The change in CO2 emissions over time"), 
+      plotlyOutput(outputId = "state_emissions"),
+      h4("The change in population size over time"),
+      plotlyOutput(outputId = "state_population")
+    ))
 )
+
+
+#define page 3 server
+graph_3_server <- function(input, output) {
+  
+  output$region <- renderUI({
+    get_region(df, input$state_name)
+  })
+  
+  output$avg_pop <- renderUI({
+    get_avg_pop(df, input$state_name)
+  })
+  
+  output$avg_density <- renderUI({
+    get_avg_density(df, input$state_name)
+  })
+  
+  # state change in emissions
+  output$state_emissions <- renderPlotly({
+    
+    state_selected <- input$state_name
+    
+    p3 <-
+      ggplot(data = complete_df, aes(x = Year,
+                                     y = MtCO2e.level)) +
+      geom_line(data = complete_df %>% 
+                  filter(State == state_selected),
+                aes(color = State)) +
+      scale_color_manual(values = c("royalblue1")) +
+      labs(x = "Year",
+           y = "CO2 concentration, in metric tons \nof carbon dioxide equivalent",
+           col = "US State Selected") +
+      theme_minimal()
+    p3 <- ggplotly(p3)
+    return(p3)
+  })
+  
+  # state change in population
+  output$state_population <- renderPlotly({
+    
+    state_selected <- input$state_name
+    
+    p4 <-
+      ggplot(data = complete_df, aes(x = Year,
+                                     y = Resident.Population)) +
+      geom_line(data = complete_df %>% 
+                  filter(State == state_selected),
+                aes(color = State)) +
+      scale_color_manual(values = c("gold2")) +
+      labs(x = "Year",
+           y = "Population",
+           col = "US State Selected") +
+      theme_minimal()
+    p4 <- ggplotly(p4)
+    return(p4)
+    
+  })
+}
 
 
 # Combine the UI and server for both pages
@@ -202,6 +297,7 @@ server <- function(input, output) {
   # Server logic for the graph page
   graph_server(input, output)
   graph_2_server(input, output)
+  graph_3_server(input, output)
 }
 
 shinyApp(ui = ui, server = server)
