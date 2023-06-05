@@ -1,0 +1,207 @@
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(shiny)
+library(plotly)
+library(shinythemes)
+
+df <- read.csv("final_df.csv")
+regions_df <- read.csv("USAregions copy.csv")
+complete_df <- left_join(df, regions_df, by = c("State" = "Name"))
+
+
+
+# UI for the introduction page
+intro_ui <- fluidPage(theme = shinytheme("yeti"),
+  titlePanel("Visualizing the Relationship Between Population Density and Air Quality in the United States"),
+  sidebarLayout(position = "right",
+                sidebarPanel(
+                  h4("Understanding MtCO2e"),
+                  p("MtCO2e is greenhouse gasses include the following: Carbon Dioxide (CO2),
+Methane (CH4), Nitrous Oxide (N2O), and Fluorinated Gasses. Our data
+set focuses on the CO2 concentration, measured in metric tons of carbon
+dioxide equivalent (mtco2e)"), 
+                  br(),
+                  img(src = "greenhouse.png", height = 220, width = 220)),
+                
+                mainPanel(
+                  h4("Introduction:"),
+                  p("As concerns about climate change continue to grow, understanding the relationship between population density and air quality becomes crucial. In this article, we delve into a project aimed at exploring the perceived and actual relationship between these two factors in the United States. By analyzing data from various sources and visualizing the findings, the goal is to gain insights into how air quality varies across different levels of population density, particularly in urban and rural areas. Ultimately, this project seeks to shed light on the impact of population density on the health and well-being of residents."),
+                  br(),
+                  
+                  h4("Unveiling Nuances:"),
+                  p("Population Density and Carbon Emissions:
+While it may seem intuitive that denser areas contribute more to emissions output, this project aims to test this assumption and uncover the nuanced dynamics at play. We aim to examine how different factors, such as agricultural hubs versus metropolitan hubs, influence carbon emissions. Carbon emissions, a key indicator of climate change, encompass various greenhouse gases, including Carbon Dioxide (CO2), Methane (CH4), Nitrous Oxide (N2O), and Fluorinated Gases. For the purpose of this project, the focus lies on CO2 concentration, measured in metric tons of carbon dioxide equivalent (mtco2e)."),
+                  br(),
+                  
+                  h4("Mapping Overlaps:"),
+                  p("Population Density and CO2 Concentration:
+By cross-referencing data-based maps of population density and CO2 concentration, we can uncover areas of overlap and lay the foundation for further research. These overlaps offer valuable insights into the relationship between carbon emissions and societal distributions. Challenging the notion that individuals alone bear the responsibility, the project seeks to raise awareness about the importance of air quality and foster informed discussions around the need for actionable change."),
+                  br(),
+                  
+                  h4("Raising Awareness and Encouraging Action:"),
+                  p("The visualization of these data sets plays a crucial role in making the information accessible, engaging, and readable to a wide range of audiences. By presenting the findings in a visually compelling manner, policymakers, urban planners, and the general public can better understand the complex relationship between population density and air quality. The hope is that this understanding will inspire targeted policies tailored to the specific challenges faced by densely populated urban areas, as opposed to rural regions. By encouraging actionable change at the community level, this project aims to contribute to the collective efforts in mitigating carbon emissions and improving air quality."),
+                  br(),
+                  
+                  h4("Conclusion:"),
+                  p("The perceived relationship between population density and air quality is an important topic to explore. By utilizing data from various sources and employing effective visualization techniques, this project seeks to uncover the true dynamics between these variables. Understanding the complexities of this relationship is crucial for developing targeted policies and fostering awareness about the impact of population density on air quality. By making informed decisions and taking collective action, we can work towards a sustainable future with improved air quality for all."),
+                  br(),
+                ),
+  )
+)
+
+# UI for the graph page
+graph_1_ui <- fluidPage(
+  titlePanel("CO2 Levels vs Population"),
+  fluidRow(
+    column(
+      width = 12,
+      p("Upon examining the data, there appears to be a correlation between population density and MtCO2e levels. However, this correlation is not significant, and differs per state. In about half of the states, both the population and MtCO2e levels rise between 1990 and 2010. However, in 2020, the MtCO2e levels drop, while the population continues to rise. This trend is seen in half of the states (Arizona being a great example), while the other half shows a different trend."),
+      br(),
+      p("The other half of the states show a rise in MtCO2e levels between 1990 and 2000, but a drop in MtCO2e levels every year since (while the population continues to grow). A great example of this is Washington State. There are many reasons why Washington does not follow the other states in the trend, but a strong reason is economic policy that was put in place in Washington to help reduce climate impacts in 2000. These policies had a major effect on the trend shown in the graph.")
+    )
+  ),
+  br(),
+  sidebarLayout(
+    sidebarPanel(
+      # Select input for state
+      selectInput("State", "Select a State:", choices = unique(df$State))
+    ),
+    mainPanel(
+      plotOutput("plot")
+    )
+  )
+)
+
+# Server logic for the graph page
+graph_1_server <- function(input, output) {
+  # Filter data
+  selected_state <- reactive({
+    subset(df, State == input$State)
+  })
+  
+  # Plot based on selected state
+  output$plot <- renderPlot({ 
+    ggplot(selected_state(), aes(x = Resident.Population, y = MtCO2e.level, color = as.factor(Year), label = Year)) +
+      geom_point() +
+      labs(x = "Population", y = "MtCO2e Levels (in Metric tons)") +
+      scale_color_manual(values = c("1990" = "blue", "2000" = "green", "2010" = "orange", "2020" = "red"),
+                         name = "Year") +
+      ggtitle(paste("CO2 Levels vs Population in", input$State))
+  })
+}
+
+# UI for the second graph page
+graph_2_ui <-  fluidPage(
+  titlePanel("Carbon emissions trends in population density groups, \nand geographical regions"),
+fluidRow(
+  p("In this section, we examine how the different regions of the US compare with climate change and population density. The question we are trying to answer here is, 'Do specific regions contribute more towards climate emissions than others?' ")),
+br(),
+p("Hover your mouse over the graphs to explore population density and climate emissions in different regions of the US"),
+br(),
+
+mainPanel(
+  h3("Comparing CO2 Emissions"),
+  plotlyOutput(outputId = "density_emissions"),
+  plotlyOutput(outputId = "regions_emissions")
+)
+)
+
+
+#define server for Page 2
+graph_2_server <- function(input, output) {
+  
+  output$avg_pop <- renderUI({
+    get_avg_pop(df, input$state_name)
+  })
+  
+  output$avg_density <- renderUI({
+    get_avg_density(df, input$state_name)
+  })
+  
+  output$region <- renderUI({
+    get_region(df, input$state_name)
+  })
+  
+  # filter data for graph
+  complete_df$Density.Groups <- 
+    with(df, ifelse(Resident.Population.Density.Rank <= 12, 'least dense',
+                    ifelse(Resident.Population.Density.Rank > 12 &
+                             Resident.Population.Density.Rank <= 25, 
+                           'lower to average',
+                           ifelse(Resident.Population.Density.Rank > 12 &
+                                    Resident.Population.Density.Rank <= 37, 
+                                  'average to upper', 'most dense'))))
+  
+  # line plot w density groups and their emissions 
+  group_density <- group_by(complete_df, Year, Density.Groups)
+  sum_density <- summarize(group_density, avg_CO2 = mean(MtCO2e.level))
+  clean_density <- ungroup(sum_density)
+  
+  output$density_emissions <- renderPlotly({
+    # p1 is density_line
+    # p2 is regions_line
+    p1 <- 
+      ggplot(data = clean_density, aes(x = Year, y = avg_CO2, color = Density.Groups)) +
+      geom_line(aes(group = Density.Groups)) +
+      scale_color_manual(values = c("least dense" = "indianred1" ,
+                                    "lower to average" = "indianred2",
+                                    "average to upper" = "indianred3",
+                                    "most dense" = "indianred4")) +
+      labs(x = "Year", 
+           y = "CO2 concentration, measured in metric tons of carbon dioxide equivalent",
+           color = "Population Density Groups \n(from least to most)") +
+      theme_minimal()
+    
+    p1 <- ggplotly(p1)
+    return(p1)
+  })
+  
+  output$regions_emissions <- renderPlotly({
+    # line plot with regions and their emissions
+    # clean data
+    group_region <- group_by(complete_df, Year, Region.Name)
+    summarized_region <- summarize(group_region, avg_CO2 = mean(MtCO2e.level))
+    clean_regions <- ungroup(summarized_region)
+    
+    p2 <- 
+      ggplot(data = clean_regions, aes(x = Year, 
+                                       y = avg_CO2, 
+                                       color = Region.Name,)) +
+      geom_line() +
+      labs(x = "Year",
+           y = "CO2 concentration, measured in metric tons of carbon dioxide equivalent",
+           color = "US States Regions") +
+      theme_minimal()
+    p2 <- ggplotly(p2)
+    return(p2)
+  })
+}
+
+
+# UI for the third graph page
+graph_3_ui <-  fluidPage(
+  titlePanel("Per State"),
+  fluidRow(
+    p("In this section, we look at individual states. We will examine both the population density per each of the four years, and their climate emissions for each of the four years. Again, there is coorelation between the two, but the coorelation is not significant. Additionally, in over 90% of states, climate emissions went down in 2020, and this is a positive trend that we hope to continue as more and more data comes out.")),
+  br(),
+  p("")
+)
+
+
+# Combine the UI and server for both pages
+ui <- navbarPage(
+  title = "Population Density and Air Quality",
+  tabPanel("Introduction", intro_ui),
+  tabPanel("Page 1", graph_1_ui),
+  tabPanel("Page 2",graph_2_ui),
+  tabPanel("Page 3", graph_3_ui)
+)
+
+server <- function(input, output) {
+  # Server logic for the graph page
+  graph_server(input, output)
+  graph_2_server(input, output)
+}
+
+shinyApp(ui = ui, server = server)
